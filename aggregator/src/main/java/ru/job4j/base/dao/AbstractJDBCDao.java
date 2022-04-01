@@ -63,8 +63,6 @@ public abstract class AbstractJDBCDao<T extends Identified<PK>, PK extends Integ
 
     private Connection connection;
 
-    private Set<ManyToOne> relations = new HashSet<ManyToOne>();
-
     @Override
     public T getByPK(Integer key) throws PersistException {
         List<T> list;
@@ -104,8 +102,6 @@ public abstract class AbstractJDBCDao<T extends Identified<PK>, PK extends Integ
         if (object.getId() != null) {
             throw new PersistException("Object is already persist.");
         }
-        // Сохраняем зависимости
-        saveDependences(object);
 
         T persistInstance;
         // Добавляем запись
@@ -136,9 +132,6 @@ public abstract class AbstractJDBCDao<T extends Identified<PK>, PK extends Integ
 
     @Override
     public void update(T object) throws PersistException {
-        // Сохраняем зависимости
-        saveDependences(object);
-
         String sql = getUpdateQuery();
         try (PreparedStatement statement = connection.prepareStatement(sql);) {
             prepareStatementForUpdate(statement, object); // заполнение аргументов запроса оставим на совесть потомков
@@ -173,35 +166,5 @@ public abstract class AbstractJDBCDao<T extends Identified<PK>, PK extends Integ
     public AbstractJDBCDao(DaoFactory<Connection> parentFactory, Connection connection) {
         this.parentFactory = parentFactory;
         this.connection = connection;
-    }
-
-    protected Identified getDependence(Class<? extends Identified> dtoClass, Serializable pk) throws PersistException {
-        return parentFactory.getDao(connection, dtoClass).getByPK(pk);
-    }
-
-    protected boolean addRelation(Class<? extends Identified> ownerClass, String field) {
-        try {
-            return relations.add(new ManyToOne(ownerClass, parentFactory, field));
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void saveDependences(Identified owner) throws PersistException {
-        for (ManyToOne m : relations) {
-            try {
-                if (m.getDependence(owner) == null) {
-                    continue;
-                }
-                if (m.getDependence(owner).getId() == null) {
-                    Identified depend = m.persistDependence(owner, connection);
-                    m.setDependence(owner, depend);
-                } else {
-                    m.updateDependence(owner, connection);
-                }
-            } catch (Exception e) {
-                throw new PersistException("Exception on save dependence in relation " + m + ".", e);
-            }
-        }
     }
 }

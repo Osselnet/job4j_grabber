@@ -1,23 +1,22 @@
 package ru.job4j;
 
-import ru.job4j.base.dao.DaoFactory;
-import ru.job4j.base.dao.GenericDao;
 import ru.job4j.base.dao.PersistException;
-import ru.job4j.base.domain.Website;
-import ru.job4j.base.sqlite.SqliteDaoFactory;
+import ru.job4j.scheduler.ScheduledExecutorRepeat;
+import ru.job4j.server.ServiceThread;
+import ru.job4j.util.Config;
 
-import java.sql.Connection;
+import java.io.IOException;
 
 public class JobAggregator {
-    private static final DaoFactory<Connection> factory = new SqliteDaoFactory();
-    private static Connection connection;
+    private static Config config;
 
     public static void main(String[] args) {
         try {
-            connection = factory.getContext();
-            GenericDao dao = factory.getDao(connection, Website.class);
-        } catch (PersistException e) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            config = new Config();
+            new ScheduledExecutorRepeat(config.isParallelWebScraping(), config.getLaunchPeriod(), config.getParams());
+            new ServiceThread(config.getPort());
+        } catch (PersistException | IOException e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
         }
     }

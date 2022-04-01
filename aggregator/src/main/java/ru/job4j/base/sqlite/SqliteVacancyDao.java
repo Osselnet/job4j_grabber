@@ -3,18 +3,13 @@ package ru.job4j.base.sqlite;
 import ru.job4j.base.dao.AbstractJDBCDao;
 import ru.job4j.base.dao.DaoFactory;
 import ru.job4j.base.dao.PersistException;
-import ru.job4j.base.domain.Website;
-import ru.job4j.base.domain.Vacancy;
+import ru.job4j.domain.Vacancy;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
 public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
-
     private class PersistVacancy extends Vacancy {
         public void setId(int id) {
             super.setId(id);
@@ -23,25 +18,25 @@ public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
 
     @Override
     public String getSelectQuery() {
-        return "SELECT id, name, surname, enrolment_date, group_id FROM daotalk.Student ";
+        return "SELECT id, title, text, link, dateTime FROM test.Vacancy ";
     }
 
     @Override
     public String getCreateQuery() {
-        return "INSERT INTO daotalk.Student (name, surname, enrolment_date, group_id) \n" +
+        return "INSERT INTO test.Vacancy (title, text, link, dateTime) \n" +
                 "VALUES (?, ?, ?, ?);";
     }
 
     @Override
     public String getUpdateQuery() {
-        return "UPDATE daotalk.Student \n" +
-                "SET name = ?, surname  = ?, enrolment_date = ?, group_id = ? \n" +
+        return "UPDATE test.Vacancy \n" +
+                "SET title = ?, text  = ?, link = ?, dateTime = ? \n" +
                 "WHERE id = ?;";
     }
 
     @Override
     public String getDeleteQuery() {
-        return "DELETE FROM daotalk.Student WHERE id= ?;";
+        return "DELETE FROM test.Vacancy WHERE id= ?;";
     }
 
     @Override
@@ -52,7 +47,6 @@ public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
 
     public SqliteVacancyDao(DaoFactory<Connection> parentFactory, Connection connection) {
         super(parentFactory, connection);
-        addRelation(Vacancy.class, "group");
     }
 
     @Override
@@ -60,12 +54,12 @@ public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
         LinkedList<Vacancy> result = new LinkedList<Vacancy>();
         try {
             while (rs.next()) {
-                PersistVacancy student = new PersistVacancy();
-                student.setId(rs.getInt("id"));
-                student.setText(rs.getString("name"));
-                student.setPublicationDate(rs.getDate("enrolment_date"));
-                student.setGroup((Website) getDependence(Website.class, rs.getInt("group_id")));
-                result.add(student);
+                PersistVacancy vacancy = new PersistVacancy();
+                vacancy.setId(rs.getInt("id"));
+                vacancy.setTitle(rs.getString("title"));
+                vacancy.setText(rs.getString("text"));
+                vacancy.setDateTime(rs.getTimestamp("dateTime").toLocalDateTime());
+                result.add(vacancy);
             }
         } catch (Exception e) {
             throw new PersistException(e);
@@ -76,13 +70,12 @@ public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
     @Override
     protected void prepareStatementForUpdate(PreparedStatement statement, Vacancy object) throws PersistException {
         try {
-            Date sqlDate = convert(object.getPublicationDate());
-            int groupId = (object.getGroup() == null || object.getGroup().getId() == null) ? -1
-                    : object.getGroup().getId();
-            statement.setString(1, object.getText());
-            statement.setDate(2, sqlDate);
-            statement.setInt(3, groupId);
-            statement.setInt(4, object.getId());
+            Timestamp sqlDateTime = Timestamp.valueOf(object.getDateTime());
+            statement.setString(1, object.getTitle());
+            statement.setString(2, object.getLink());
+            statement.setString(3, object.getText());
+            statement.setTimestamp(4, sqlDateTime);
+            statement.setInt(5, object.getId());
         } catch (Exception e) {
             throw new PersistException(e);
         }
@@ -91,12 +84,11 @@ public class SqliteVacancyDao extends AbstractJDBCDao<Vacancy, Integer> {
     @Override
     protected void prepareStatementForInsert(PreparedStatement statement, Vacancy object) throws PersistException {
         try {
-            Date sqlDate = convert(object.getPublicationDate());
-            int groupId = (object.getGroup() == null || object.getGroup().getId() == null) ? -1
-                    : object.getGroup().getId();
-            statement.setString(1, object.getText());
-            statement.setDate(2, sqlDate);
-            statement.setInt(3, groupId);
+            Timestamp sqlDateTime = Timestamp.valueOf(object.getDateTime());
+            statement.setString(1, object.getTitle());
+            statement.setString(2, object.getLink());
+            statement.setString(3, object.getText());
+            statement.setTimestamp(4, sqlDateTime);
         } catch (Exception e) {
             throw new PersistException(e);
         }

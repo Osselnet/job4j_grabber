@@ -1,8 +1,7 @@
 package ru.job4j.base.sqlite;
 
 import ru.job4j.base.dao.*;
-import ru.job4j.base.domain.Website;
-import ru.job4j.base.domain.Vacancy;
+import ru.job4j.domain.Vacancy;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,9 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SqliteDaoFactory implements DaoFactory<Connection> {
-    private String url = "jdbc:sqlite:test.db";//URL адрес
-    private String driver = "org.sqlite.JDBC";//Имя драйвера
-    private Map<Class, DaoCreator> creators;
+    private final String path = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+    private final String url = "jdbc:sqlite:" + path + "test.db";
+    private final String driver = "org.sqlite.JDBC";//РРјСЏ РґСЂР°Р№РІРµСЂР°
+    private final Map<Class, DaoCreator> creators;
 
     public Connection getContext() throws PersistException {
         Connection connection = null;
@@ -36,18 +36,12 @@ public class SqliteDaoFactory implements DaoFactory<Connection> {
 
     public SqliteDaoFactory() {
         try {
-            Class.forName(driver);//Регистрируем драйвер
+            Class.forName(driver);//Р РµРіРёСЃС‚СЂРёСЂСѓРµРј РґСЂР°Р№РІРµСЂ
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
         creators = new HashMap<Class, DaoCreator>();
-        creators.put(Website.class, new DaoCreator<Connection>() {
-            @Override
-            public GenericDao create(Connection connection) {
-                return new SqliteWebsiteDao(SqliteDaoFactory.this, connection);
-            }
-        });
         creators.put(Vacancy.class, new DaoCreator<Connection>() {
             @Override
             public GenericDao create(Connection connection) {
@@ -56,4 +50,3 @@ public class SqliteDaoFactory implements DaoFactory<Connection> {
         });
     }
 }
-
